@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Blog</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --bg: #fef9ef;
+            --accent: #e63946;
+            --navy: #1d3557;
+            --text: #333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background: var(--navy);
+            color: white;
+            padding: 1em 1.5em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        .menu-btn {
+            background: var(--accent);
+            border: none;
+            padding: 0.5em 1em;
+            color: white;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease; /* Animation */
+        }
+
+        .menu-btn:hover {
+            background-color: #c72c38; /* Slightly darker red */
+            transform: scale(1.05); /* Slight enlarge */
+        }
+
+        .side-menu {
+            position: fixed;
+            top: 0;
+            right: -260px;
+            width: 260px;
+            height: 100%;
+            background: white;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease; /* Smoother animation */
+            z-index: 1001;
+            padding: 2em 1.5em;
+            opacity: 0; /* Start hidden for fade-in */
+        }
+
+        .side-menu.active {
+            right: 0;
+            opacity: 1; /* Fade in */
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+            opacity: 0; /* Start hidden for fade-in */
+            transition: opacity 0.3s ease; /* Animation */
+        }
+
+        .overlay.active {
+            display: block;
+            opacity: 1; /* Fade in */
+        }
+
+        h1 {
+            font-size: 2rem;
+        }
+
+        /* Styles for main content */
+        main {
+            padding: 2em 1.5em;
+            max-width: 1200px;
+            margin: auto;
+            flex-grow: 1;
+        }
+
+        /* Featured Post Section */
+        .featured-post {
+            margin-bottom: 3em;
+        }
+
+        .featured-post h2 {
+            font-size: 1.8rem;
+            color: var(--accent);
+            margin-bottom: 1em;
+        }
+
+        .featured-post .post-content {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 1em;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            transition: transform 0.3s ease, box-shadow 0.3s ease; /* Animation */
+        }
+
+        .featured-post .post-content:hover {
+            transform: translateY(-5px); /* Lift effect */
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12); /* Enhanced shadow */
+        }
+
+        .featured-post .text-content {
+            padding: 1.5em;
+        }
+
+        .featured-post h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5em;
+        }
+
+        .featured-post p {
+            color: #555;
+        }
+
+        .featured-post img {
+            width: 100%;
+            height: auto;
+        }
+
+        /* Recent Posts Grid */
+        .recent-posts {
+            margin-bottom: 3em;
+        }
+
+        .recent-posts h2 {
+            font-size: 1.8rem;
+            color: var(--accent);
+            margin-bottom: 1em;
+        }
+
+        .recent-posts-grid {
+            display: grid;
+            gap: 1.5em;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        .recent-posts-grid article {
+            background: white;
+            padding: 1em;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease; /* Animation */
+        }
+
+        .recent-posts-grid article:hover {
+            transform: translateY(-5px); /* Lift effect */
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1); /* Enhanced shadow */
+        }
+
+        .recent-posts-grid article img {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 0.8em;
+        }
+
+        .recent-posts-grid article h4 {
+            margin-bottom: 0.3em;
+        }
+
+        .recent-posts-grid article p {
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .side-menu ul {
+            list-style: none;
+            padding: 1em 0;
+        }
+
+        .side-menu li {
+            margin-bottom: 0.5em;
+        }
+
+        .side-menu a {
+            text-decoration: none;
+            color: var(--navy);
+            font-weight: bold;
+            transition: color 0.3s ease; /* Animation */
+        }
+
+        .side-menu a:hover {
+            color: var(--accent);
+            transform: translateX(5px); /* Subtle slide on hover */
+        }
+
+        /* Footer Styles */
+        footer {
+            background: var(--navy);
+            color: white;
+            padding: 2em 1.5em;
+            text-align: center;
+            margin-top: 3em;
+        }
+
+        footer .footer-content {
+            max-width: 1200px;
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1em;
+        }
+
+        footer .footer-links a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+            transition: color 0.3s ease;
+        }
+
+        footer .footer-links a:hover {
+            color: var(--accent);
+        }
+
+        footer .social-icons a {
+            color: white;
+            font-size: 1.5em;
+            margin: 0 8px;
+            transition: color 0.3s ease, transform 0.2s ease; /* Animation */
+        }
+
+        footer .social-icons a:hover {
+            color: var(--accent);
+            transform: translateY(-3px); /* Subtle lift for icons */
+        }
+
+        /* Responsive adjustments for footer */
+        @media (min-width: 768px) {
+            footer .footer-content {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>My Blog</h1>
+        <div class="menu-btn" id="menu-button">☰</div>
+    </header>
+
+    <div class="side-menu" id="menu">
+        <p><strong>Navigation</strong></p>
+        <ul>
+            <li><a href="#">Home</a></li>
+            <li><a href="#">Recent Posts</a></li>
+            <li><a href="#">Popular</a></li>
+            <li><a href="#">Contact</a></li>
+        </ul>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <main>
+        <section class="featured-post">
+            <h2>Featured Post</h2>
+            <div class="post-content">
+                <div class="text-content">
+                    <h3>How I Designed This Blog (And What You Can Learn)</h3>
+                    <p>A behind-the-scenes look at the decisions that went into this layout, with tips for beginners building their first personal blog.</p>
+                </div>
+                <img src="https://source.unsplash.com/800x400/?design,blog" alt="Featured" />
+            </div>
+        </section>
+
+        <section class="recent-posts">
+            <h2>Recent Posts</h2>
+            <div class="recent-posts-grid">
+
+                <article>
+                    <img src="https://source.unsplash.com/400x200/?tech,writing" alt="Post 1" />
+                    <h4>Top 5 Writing Tools for 2025</h4>
+                    <p>From distraction-free editors to AI helpers, here are tools making writing easier.</p>
+                </article>
+
+                <article>
+                    <img src="https://source.unsplash.com/400x200/?coding,javascript" alt="Post 2" />
+                    <h4>Understanding Asynchronous JavaScript</h4>
+                    <p>A deep dive into Promises, async/await, and how to handle non-blocking operations.</p>
+                </article>
+
+                <article>
+                    <img src="https://source.unsplash.com/400x200/?productivity,mindset" alt="Post 3" />
+                    <h4>Boosting Your Productivity: My Daily Rituals</h4>
+                    <p>Simple habits that have significantly improved my focus and output.</p>
+                </article>
+
+                <article>
+                    <img src="https://source.unsplash.com/400x200/?nature,travel" alt="Post 4" />
+                    <h4>Exploring the Beauty of Nature Through Photography</h4>
+                    <p>Tips for capturing stunning landscapes and wildlife on your next adventure.</p>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 My Blog. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+            </div>
+            <div class="social-icons">
+                <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const menuBtn = document.getElementById('menu-button');
+        const sideMenu = document.getElementById('menu');
+        const overlay = document.getElementById('overlay');
+
+        // Open menu
+        menuBtn.addEventListener('click', () => {
+            sideMenu.classList.add('active');
+            overlay.classList.add('active');
+        });
+
+        // Close when clicking outside or on a menu link
+        overlay.addEventListener('click', () => {
+            sideMenu.classList.remove('active');
+            overlay.classList.remove('active');
+        });
+
+        // Optional: Close menu when a navigation link is clicked
+        const navLinks = document.querySelectorAll('.side-menu a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                sideMenu.classList.remove('active');
+                overlay.classList.remove('active');
+            });
+        });
+    </script>
+</body>
+</html>

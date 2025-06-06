@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blog Publisher Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #fef9ef;
+            --accent: #e63946;
+            --navy: #1d3557;
+            --text: #333;
+            --light-gray: #f2f2f2;
+            --border-color: #ddd;
+            --gemini-btn-bg: #4285F4; /* Google Blue */
+            --gemini-btn-hover: #3367D6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 2.5em;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            margin: auto;
+            text-align: center;
+            margin-bottom: 2em; /* Add some space between containers */
+        }
+
+        h2 {
+            color: var(--navy);
+            margin-bottom: 1.5em;
+            font-size: 1.8em;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1.2em;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5em;
+            font-weight: bold;
+            color: var(--text);
+        }
+
+        input[type="email"],
+        input[type="password"],
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 0.8em 1em;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1em;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        input[type="text"]:focus,
+        textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.2);
+            outline: none;
+        }
+
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        button {
+            background: var(--navy);
+            color: white;
+            padding: 0.9em 1.5em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            width: 100%;
+            margin-top: 1.5em;
+        }
+
+        button:hover {
+            background-color: #1a2a46; /* Slightly darker navy */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-accent {
+            background-color: var(--accent);
+        }
+
+        .btn-accent:hover {
+            background-color: #c72c38;
+        }
+
+        .btn-gemini {
+            background-color: var(--gemini-btn-bg);
+            margin-top: 0.8em; /* Closer to the input/textarea */
+        }
+
+        .btn-gemini:hover {
+            background-color: var(--gemini-btn-hover);
+        }
+
+        .gemini-buttons-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8em;
+            margin-top: 1em;
+            margin-bottom: 1em;
+        }
+
+        .gemini-buttons-group button {
+            width: auto; /* Allow buttons to size based on content */
+            margin-top: 0; /* Override default button margin */
+        }
+
+        @media (min-width: 480px) {
+            .gemini-buttons-group {
+                flex-direction: row; /* Arrange buttons horizontally on wider screens */
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .gemini-buttons-group button {
+                flex: 1; /* Make buttons take equal space */
+                max-width: calc(33% - 0.5em); /* Max width for 3 buttons per row */
+            }
+        }
+
+
+        .message {
+            margin-top: 1.5em;
+            padding: 1em;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            color: var(--text);
+            background-color: var(--light-gray);
+            border: 1px solid var(--border-color);
+            display: none; /* Hidden by default */
+        }
+
+        .message.error {
+            background-color: #ffe0e0;
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .message.success {
+            background-color: #e0ffe0;
+            color: #28a745;
+            border-color: #28a745;
+        }
+
+        .message.info {
+            background-color: #e0f2f7;
+            color: #31708f;
+            border-color: #a7d9f2;
+        }
+
+        .loading-indicator {
+            display: none;
+            margin-top: 1em;
+            color: var(--navy);
+            font-style: italic;
+        }
+
+        #dashboard-container {
+            display: none; /* Hidden by default */
+        }
+
+        .user-info {
+            margin-bottom: 1em;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .user-id {
+            font-weight: bold;
+            color: var(--navy);
+            word-break: break-all; /* Ensure long IDs don't overflow */
+        }
+
+        /* Post list styling */
+        #post-list-container {
+            margin-top: 3em;
+            border-top: 1px solid var(--border-color);
+            padding-top: 2em;
+        }
+
+        #post-list-container h3 {
+            color: var(--navy);
+            margin-bottom: 1em;
+            font-size: 1.5em;
+        }
+
+        #post-list {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+        }
+
+        #post-list li {
+            background: var(--light-gray);
+            padding: 1em 1.5em;
+            margin-bottom: 1em;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 1em;
+        }
+
+        #post-list li img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        #post-list li .post-details {
+            flex-grow: 1;
+        }
+
+        #post-list li h4 {
+            color: var(--accent);
+            margin-bottom: 0.3em;
+            font-size: 1.1em;
+        }
+
+        #post-list li p {
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .container {
+                padding: 1.5em;
+                border-radius: 8px;
+            }
+            h2 {
+                font-size: 1.5em;
+                margin-bottom: 1em;
+            }
+            button {
+                padding: 0.8em 1.2em;
+                font-size: 1em;
+            }
+            #post-list li {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            #post-list li img {
+                width: 100%;
+                height: auto;
+                max-height: 150px;
+                margin-bottom: 0.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="login-container">
+        <h2>Publisher Login</h2>
+        <div class="form-group">
+            <label for="login-email">Email:</label>
+            <input type="email" id="login-email" placeholder="publisher@example.com" required>
+        </div>
+        <div class="form-group">
+            <label for="login-password">Password:</label>
+            <input type="password" id="login-password" placeholder="password" required>
+        </div>
+        <button id="login-button">Login</button>
+        <div id="login-message" class="message"></div>
+        <div id="login-loading" class="loading-indicator">Logging in...</div>
+    </div>
+
+    <div class="container" id="dashboard-container">
+        <div class="user-info">Logged in as: <span id="user-email"></span><br>User ID: <span id="user-id" class="user-id"></span></div>
+        <button id="logout-button" class="btn-accent">Logout</button>
+
+        <h2>Create New Post</h2>
+        <div class="form-group">
+            <label for="post-title">Post Title:</label>
+            <input type="text" id="post-title" placeholder="Enter title for your blog post" required>
+            <div class="gemini-buttons-group">
+                <button id="generate-content-button" class="btn-gemini">✨ Generate Content</button>
+                <button id="suggest-titles-button" class="btn-gemini">✨ Suggest Titles</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="post-content">Post Content:</label>
+            <textarea id="post-content" placeholder="Write your blog post here..." required></textarea>
+            <div class="gemini-buttons-group">
+                <button id="summarize-content-button" class="btn-gemini">✨ Summarize Content</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="post-image">Upload Image (Optional):</label>
+            <input type="file" id="post-image" accept="image/*">
+        </div>
+        <button id="submit-post-button">Publish Post</button>
+        <div id="post-message" class="message"></div>
+        <div id="post-loading" class="loading-indicator">Publishing...</div>
+        <div id="gemini-suggestions-message" class="message info"></div>
+
+
+        <div id="post-list-container">
+            <h3>Your Published Posts</h3>
+            <ul id="post-list">
+                <!-- Posts will be loaded here -->
+            </ul>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+        // Global variables provided by the Canvas environment
+        // Safely retrieve __app_id and __firebase_config
+        // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDKlbTs41lfnQcmuFsMD7e5dTLvqSBR4bo",
+  authDomain: "my-blog-site-38f29.firebaseapp.com",
+  projectId: "my-blog-site-38f29",
+  storageBucket: "my-blog-site-38f29.firebasestorage.app",
+  messagingSenderId: "414579048695",
+  appId: "1:414579048695:web:544f81eabe17cc15e153f2",
+  measurementId: "G-RM8HEY8HDZ"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+        // Initialize Firebase
+        let app;
+        let auth;
+        let db;
+        let storage;
+        let userId = null; // Will store the authenticated user's ID
+        let authReady = false; // Flag to indicate if authentication is ready
+
+        // UI Elements
+        const loginContainer = document.getElementById('login-container');
+        const dashboardContainer = document.getElementById('dashboard-container');
+        const loginEmailInput = document.getElementById('login-email');
+        const loginPasswordInput = document.getElementById('login-password');
+        const loginButton = document.getElementById('login-button');
+        const logoutButton = document.getElementById('logout-button');
+        const loginMessage = document.getElementById('login-message');
+        const loginLoading = document.getElementById('login-loading');
+        const userEmailSpan = document.getElementById('user-email');
+        const userIdSpan = document.getElementById('user-id');
+
+        const postTitleInput = document.getElementById('post-title');
+        const postContentTextarea = document.getElementById('post-content');
+        const postImageInput = document.getElementById('post-image');
+        const submitPostButton = document.getElementById('submit-post-button');
+        const postMessage = document.getElementById('post-message');
+        const postLoading = document.getElementById('post-loading');
+        const postList = document.getElementById('post-list');
+
+        // Gemini AI Buttons and Message
+        const generateContentButton = document.getElementById('generate-content-button');
+        const summarizeContentButton = document.getElementById('summarize-content-button');
+        const suggestTitlesButton = document.getElementById('suggest-titles-button');
+        const geminiSuggestionsMessage = document.getElementById('gemini-suggestions-message');
+
+        const API_KEY = ""; // Canvas will provide this at runtime
+
+        // Helper function to display messages
+        function showMessage(element, message, type = 'info') {
+            element.textContent = message;
+            element.className = `message ${type}`; // Reset classes and add new type
+            element.style.display = 'block';
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000); // Hide after 5 seconds
+        }
+
+        // Helper function to show/hide loading indicators
+        function showLoading(element, show) {
+            element.style.display = show ? 'block' : 'none';
+        }
+
+        // Firebase Initialization and Authentication Listener
+        async function initializeFirebaseAndAuth() {
+            try {
+                // Only initialize if not already initialized
+                if (!app) {
+                    app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    storage = getStorage(app);
+
+                    // Sign in with custom token if available, otherwise anonymously
+                    if (typeof __initial_auth_token !== 'undefined') {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                }
+
+                // Listen for authentication state changes
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userEmailSpan.textContent = user.email || 'Anonymous User';
+                        userIdSpan.textContent = userId;
+                        loginContainer.style.display = 'none';
+                        dashboardContainer.style.display = 'block';
+                        authReady = true; // Auth is ready, now we can load posts
+                        loadPosts(); // Load posts once authenticated
+                    } else {
+                        userId = null;
+                        userEmailSpan.textContent = '';
+                        userIdSpan.textContent = '';
+                        loginContainer.style.display = 'block';
+                        dashboardContainer.style.display = 'none';
+                        authReady = true; // Auth is ready, but no user logged in
+                    }
+                });
+            } catch (error) {
+                console.error("Error initializing Firebase or during initial auth:", error);
+                showMessage(loginMessage, `Firebase setup error: ${error.message}`, 'error');
+            }
+        }
+
+        // Call initialization function
+        initializeFirebaseAndAuth();
+
+        // Login Functionality
+        loginButton.addEventListener('click', async () => {
+            const email = loginEmailInput.value;
+            const password = loginPasswordInput.value;
+
+            if (!email || !password) {
+                showMessage(loginMessage, 'Please enter both email and password.', 'error');
+                return;
+            }
+
+            showLoading(loginLoading, true);
+            showMessage(loginMessage, '', 'info'); // Clear previous messages
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showMessage(loginMessage, 'Logged in successfully!', 'success');
+                // UI state change handled by onAuthStateChanged
+            } catch (error) {
+                console.error("Login error:", error);
+                let errorMessage = 'Login failed. Please check your credentials.';
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMessage = 'Invalid email or password.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Invalid email format.';
+                }
+                showMessage(loginMessage, errorMessage, 'error');
+            } finally {
+                showLoading(loginLoading, false);
+            }
+        });
+
+        // Logout Functionality
+        logoutButton.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                showMessage(loginMessage, 'Logged out successfully.', 'success');
+                // UI state change handled by onAuthStateChanged
+            } catch (error) {
+                console.error("Logout error:", error);
+                showMessage(postMessage, `Logout failed: ${error.message}`, 'error');
+            }
+        });
+
+        // Submit Post Functionality
+        submitPostButton.addEventListener('click', async () => {
+            if (!userId) {
+                showMessage(postMessage, 'You must be logged in to publish a post.', 'error');
+                return;
+            }
+
+            const title = postTitleInput.value.trim();
+            const content = postContentTextarea.value.trim();
+            const imageFile = postImageInput.files[0];
+
+            if (!title || !content) {
+                showMessage(postMessage, 'Please enter both post title and content.', 'error');
+                return;
+            }
+
+            showLoading(postLoading, true);
+            showMessage(postMessage, '', 'info'); // Clear previous messages
+
+            try {
+                let imageUrl = null;
+                if (imageFile) {
+                    // Upload image to Firebase Storage
+                    const imageRef = ref(storage, `artifacts/${appId}/public/images/${userId}/${Date.now()}_${imageFile.name}`);
+                    const uploadResult = await uploadBytes(imageRef, imageFile);
+                    imageUrl = await getDownloadURL(uploadResult.ref);
+                    showMessage(postMessage, 'Image uploaded successfully!', 'success');
+                }
+
+                // Add post to Firestore
+                const postsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts`);
+                await addDoc(postsCollectionRef, {
+                    title: title,
+                    content: content,
+                    imageUrl: imageUrl,
+                    authorId: userId,
+                    createdAt: new Date(),
+                    lastModifiedAt: new Date()
+                });
+
+                showMessage(postMessage, 'Post published successfully!', 'success');
+                // Clear the form
+                postTitleInput.value = '';
+                postContentTextarea.value = '';
+                postImageInput.value = ''; // Clear file input
+            } catch (error) {
+                console.error("Error publishing post:", error);
+                showMessage(postMessage, `Failed to publish post: ${error.message}`, 'error');
+            } finally {
+                showLoading(postLoading, false);
+            }
+        });
+
+        // Load and Display Posts (real-time with onSnapshot)
+        function loadPosts() {
+            // Only attempt to load posts if auth is ready and db is initialized
+            if (!authReady || !db) {
+                console.log("Firebase not ready to load posts.");
+                return;
+            }
+
+            const postsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts`);
+            const q = query(postsCollectionRef);
+
+            onSnapshot(q, (snapshot) => {
+                postList.innerHTML = ''; // Clear current list
+                snapshot.forEach((doc) => {
+                    const post = doc.data();
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `
+                        ${post.imageUrl ? `<img src="${post.imageUrl}" alt="${post.title}" />` : ''}
+                        <div class="post-details">
+                            <h4>${post.title}</h4>
+                            <p>${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}</p>
+                            <small>By: ${post.authorId} | ${new Date(post.createdAt.toDate()).toLocaleDateString()}</small>
+                        </div>
+                    `;
+                    postList.prepend(listItem); // Add new posts to the top
+                });
+            }, (error) => {
+                console.error("Error fetching posts:", error);
+                showMessage(postMessage, `Error loading posts: ${error.message}`, 'error');
+            });
+        }
+
+        // --- Gemini API Integrations ---
+
+        async function callGeminiAPI(prompt) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                return result.candidates[0].content.parts[0].text;
+            } else {
+                throw new Error("No content generated by Gemini API.");
+            }
+        }
+
+        // ✨ Generate Content Function
+        generateContentButton.addEventListener('click', async () => {
+            const title = postTitleInput.value.trim();
+            if (!title) {
+                showMessage(geminiSuggestionsMessage, 'Please enter a post title to generate content.', 'error');
+                return;
+            }
+
+            showLoading(postLoading, true);
+            showMessage(geminiSuggestionsMessage, 'Generating content...', 'info');
+
+            try {
+                const prompt = `Write a detailed blog post about "${title}". Focus on providing insightful information and engaging the reader. Aim for at least 300 words.`;
+                const generatedContent = await callGeminiAPI(prompt);
+                postContentTextarea.value = generatedContent;
+                showMessage(geminiSuggestionsMessage, 'Content generated successfully!', 'success');
+            } catch (error) {
+                console.error("Error generating content:", error);
+                showMessage(geminiSuggestionsMessage, `Failed to generate content: ${error.message}`, 'error');
+            } finally {
+                showLoading(postLoading, false);
+            }
+        });
+
+        // ✨ Summarize Content Function
+        summarizeContentButton.addEventListener('click', async () => {
+            const content = postContentTextarea.value.trim();
+            if (!content) {
+                showMessage(geminiSuggestionsMessage, 'Please enter content to summarize.', 'error');
+                return;
+            }
+
+            showLoading(postLoading, true);
+            showMessage(geminiSuggestionsMessage, 'Summarizing content...', 'info');
+
+            try {
+                const prompt = `Summarize the following blog post content in 2-3 concise paragraphs:\n\n${content}`;
+                const summarizedText = await callGeminiAPI(prompt);
+                // Optionally replace content or display in a modal/separate area
+                // For now, we'll replace the content (user can undo)
+                postContentTextarea.value = summarizedText;
+                showMessage(geminiSuggestionsMessage, 'Content summarized successfully!', 'success');
+            } catch (error) {
+                console.error("Error summarizing content:", error);
+                showMessage(geminiSuggestionsMessage, `Failed to summarize content: ${error.message}`, 'error');
+            } finally {
+                showLoading(postLoading, false);
+            }
+        });
+
+        // ✨ Suggest Titles Function
+        suggestTitlesButton.addEventListener('click', async () => {
+            const content = postContentTextarea.value.trim();
+            if (!content) {
+                showMessage(geminiSuggestionsMessage, 'Please enter some content to suggest titles.', 'error');
+                return;
+            }
+
+            showLoading(postLoading, true);
+            showMessage(geminiSuggestionsMessage, 'Suggesting titles...', 'info');
+
+            try {
+                const prompt = `Based on the following blog post content, suggest 5 catchy and engaging titles. Provide them as a numbered list:\n\n${content}`;
+                const suggestedTitles = await callGeminiAPI(prompt);
+                showMessage(geminiSuggestionsMessage, `Suggested Titles:\n${suggestedTitles}`, 'info');
+            } catch (error) {
+                console.error("Error suggesting titles:", error);
+                showMessage(geminiSuggestionsMessage, `Failed to suggest titles: ${error.message}`, 'error');
+            } finally {
+                showLoading(postLoading, false);
+            }
+        });
+
+    </script>
+</body>
+</html>
