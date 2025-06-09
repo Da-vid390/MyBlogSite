@@ -369,21 +369,12 @@ const firebaseConfig = {
   projectId: "my-blog-site-38f29",
   storageBucket: "my-blog-site-38f29.firebasestorage.app",
   messagingSenderId: "414579048695",
-  appId: "1:414579048695:web:544f81eabe17cc15e153f2",
-  measurementId: "G-RM8HEY8HDZ"
-};
-
+// appId: "1:414579048695:web:544f81eabe17cc15e153f2",
+  //measurementId: "G-RM8HEY8HDZ"};
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-        // Initialize Firebase
-        let app;
-        let auth;
-        let db;
-        let storage;
-        let userId = null; // Will store the authenticated user's ID
-        let authReady = false; // Flag to indicate if authentication is ready
+//const app = initializeApp(firebaseConfig);
+//const analytics = getAnalytics(app);
+let authReady = false; // Flag to indicate if authentication is ready
 
         // UI Elements
         const loginContainer = document.getElementById('login-container');
