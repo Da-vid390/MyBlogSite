@@ -341,40 +341,13 @@
         <div id="post-list-container">
             <h3>Your Published Posts</h3>
             <ul id="post-list">
-                <!-- Posts will be loaded here -->
-            </ul>
+                </ul>
         </div>
     </div>
 
     <script type="module">
-        // Import Firebase modules
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-
-        // Global variables provided by the Canvas environment
-        // Safely retrieve __app_id and __firebase_config
-        // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDKlbTs41lfnQcmuFsMD7e5dTLvqSBR4bo",
-  authDomain: "my-blog-site-38f29.firebaseapp.com",
-  projectId: "my-blog-site-38f29",
-  storageBucket: "my-blog-site-38f29.firebasestorage.app",
-  messagingSenderId: "414579048695",
-// appId: "1:414579048695:web:544f81eabe17cc15e153f2",
-  //measurementId: "G-RM8HEY8HDZ"};
-// Initialize Firebase
-//const app = initializeApp(firebaseConfig);
-//const analytics = getAnalytics(app);
-let authReady = false; // Flag to indicate if authentication is ready
+        // Define your Render Backend URL
+        const RENDER_BACKEND_URL = 'https://blog-backend-b6la.onrender.com'; // **Ensure this is your correct Render backend URL**
 
         // UI Elements
         const loginContainer = document.getElementById('login-container');
@@ -402,7 +375,8 @@ let authReady = false; // Flag to indicate if authentication is ready
         const suggestTitlesButton = document.getElementById('suggest-titles-button');
         const geminiSuggestionsMessage = document.getElementById('gemini-suggestions-message');
 
-        const API_KEY = ""; // Canvas will provide this at runtime
+        let currentUserId = null; // To store the ID from your backend's JWT
+        let currentUserEmail = null; // To store the email from your backend's JWT
 
         // Helper function to display messages
         function showMessage(element, message, type = 'info') {
@@ -419,53 +393,62 @@ let authReady = false; // Flag to indicate if authentication is ready
             element.style.display = show ? 'block' : 'none';
         }
 
-        // Firebase Initialization and Authentication Listener
-        async function initializeFirebaseAndAuth() {
-            try {
-                // Only initialize if not already initialized
-                if (!app) {
-                    app = initializeApp(firebaseConfig);
-                    auth = getAuth(app);
-                    db = getFirestore(app);
-                    storage = getStorage(app);
-
-                    // Sign in with custom token if available, otherwise anonymously
-                    if (typeof __initial_auth_token !== 'undefined') {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                }
-
-                // Listen for authentication state changes
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        userEmailSpan.textContent = user.email || 'Anonymous User';
-                        userIdSpan.textContent = userId;
-                        loginContainer.style.display = 'none';
-                        dashboardContainer.style.display = 'block';
-                        authReady = true; // Auth is ready, now we can load posts
-                        loadPosts(); // Load posts once authenticated
-                    } else {
-                        userId = null;
-                        userEmailSpan.textContent = '';
-                        userIdSpan.textContent = '';
-                        loginContainer.style.display = 'block';
-                        dashboardContainer.style.display = 'none';
-                        authReady = true; // Auth is ready, but no user logged in
-                    }
-                });
-            } catch (error) {
-                console.error("Error initializing Firebase or during initial auth:", error);
-                showMessage(loginMessage, `Firebase setup error: ${error.message}`, 'error');
+        // Function to set authentication state in UI
+        function setAuthState(isLoggedIn, email = null, userId = null) {
+            if (isLoggedIn) {
+                loginContainer.style.display = 'none';
+                dashboardContainer.style.display = 'block';
+                userEmailSpan.textContent = email || 'Publisher';
+                userIdSpan.textContent = userId || 'N/A';
+                currentUserId = userId;
+                currentUserEmail = email;
+                loadPosts(); // Load posts after successful login
+            } else {
+                loginContainer.style.display = 'block';
+                dashboardContainer.style.display = 'none';
+                userEmailSpan.textContent = '';
+                userIdSpan.textContent = '';
+                currentUserId = null;
+                currentUserEmail = null;
             }
         }
 
-        // Call initialization function
-        initializeFirebaseAndAuth();
+        // --- Authentication Logic (Now talking to Render Backend) ---
 
-        // Login Functionality
+        // Check for existing JWT on page load
+        async function checkAuthStatus() {
+            const token = localStorage.getItem('jwt_token');
+            if (token) {
+                try {
+                    // Assuming your backend has an endpoint to verify the token and return user info
+                    const response = await fetch(`${RENDER_BACKEND_URL}/api/verify-token`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        setAuthState(true, data.email, data.userId); // Assuming backend returns email and userId
+                    } else {
+                        console.error("Token verification failed:", data.message);
+                        localStorage.removeItem('jwt_token'); // Remove invalid token
+                        setAuthState(false);
+                    }
+                } catch (error) {
+                    console.error("Error verifying token with backend:", error);
+                    localStorage.removeItem('jwt_token');
+                    setAuthState(false);
+                }
+            } else {
+                setAuthState(false);
+            }
+        }
+
+        // Call checkAuthStatus on initial load
+        checkAuthStatus();
+
+        // Login Functionality (Now talking to Render Backend)
         loginButton.addEventListener('click', async () => {
             const email = loginEmailInput.value;
             const password = loginPasswordInput.value;
@@ -479,38 +462,42 @@ let authReady = false; // Flag to indicate if authentication is ready
             showMessage(loginMessage, '', 'info'); // Clear previous messages
 
             try {
-                await signInWithEmailAndPassword(auth, email, password);
-                showMessage(loginMessage, 'Logged in successfully!', 'success');
-                // UI state change handled by onAuthStateChanged
-            } catch (error) {
-                console.error("Login error:", error);
-                let errorMessage = 'Login failed. Please check your credentials.';
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    errorMessage = 'Invalid email or password.';
-                } else if (error.code === 'auth/invalid-email') {
-                    errorMessage = 'Invalid email format.';
+                const response = await fetch(`${RENDER_BACKEND_URL}/api/signin`, { // Assuming your login endpoint is /api/signin
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('jwt_token', data.token); // Store the JWT received from your backend
+                    showMessage(loginMessage, 'Logged in successfully!', 'success');
+                    setAuthState(true, data.email, data.userId); // Assuming backend returns email and userId
+                } else {
+                    console.error("Login failed:", data.message);
+                    showMessage(loginMessage, data.message || 'Login failed. Please check your credentials.', 'error');
                 }
-                showMessage(loginMessage, errorMessage, 'error');
+            } catch (error) {
+                console.error("Error during login:", error);
+                showMessage(loginMessage, `Login failed: ${error.message}`, 'error');
             } finally {
                 showLoading(loginLoading, false);
             }
         });
 
-        // Logout Functionality
-        logoutButton.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-                showMessage(loginMessage, 'Logged out successfully.', 'success');
-                // UI state change handled by onAuthStateChanged
-            } catch (error) {
-                console.error("Logout error:", error);
-                showMessage(postMessage, `Logout failed: ${error.message}`, 'error');
-            }
+        // Logout Functionality (Simply remove JWT from frontend)
+        logoutButton.addEventListener('click', () => {
+            localStorage.removeItem('jwt_token'); // Clear the stored JWT
+            setAuthState(false); // Update UI to logged out state
+            showMessage(loginMessage, 'Logged out successfully.', 'success');
         });
 
-        // Submit Post Functionality
+
+        // --- Post Management (Now talking to Render Backend) ---
+
         submitPostButton.addEventListener('click', async () => {
-            if (!userId) {
+            const token = localStorage.getItem('jwt_token');
+            if (!token) {
                 showMessage(postMessage, 'You must be logged in to publish a post.', 'error');
                 return;
             }
@@ -530,29 +517,48 @@ let authReady = false; // Flag to indicate if authentication is ready
             try {
                 let imageUrl = null;
                 if (imageFile) {
-                    // Upload image to Firebase Storage
-                    const imageRef = ref(storage, `artifacts/${appId}/public/images/${userId}/${Date.now()}_${imageFile.name}`);
-                    const uploadResult = await uploadBytes(imageRef, imageFile);
-                    imageUrl = await getDownloadURL(uploadResult.ref);
-                    showMessage(postMessage, 'Image uploaded successfully!', 'success');
+                    // Assuming your backend has an endpoint for image uploads, e.g., /api/upload-image
+                    // The backend will handle saving to storage (e.g., Firebase Storage, S3, Cloudinary)
+                    const formData = new FormData();
+                    formData.append('image', imageFile); // 'image' should match the field name your backend expects
+
+                    const uploadResponse = await fetch(`${RENDER_BACKEND_URL}/api/upload-image`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}` // Authenticate image upload request
+                        },
+                        body: formData // Send FormData for file uploads
+                    });
+                    const uploadData = await uploadResponse.json();
+                    if (uploadResponse.ok) {
+                        imageUrl = uploadData.imageUrl; // Assuming backend returns the URL of the uploaded image
+                        showMessage(postMessage, 'Image uploaded successfully!', 'success');
+                    } else {
+                        throw new Error(uploadData.message || 'Image upload failed.');
+                    }
                 }
 
-                // Add post to Firestore
-                const postsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts`);
-                await addDoc(postsCollectionRef, {
-                    title: title,
-                    content: content,
-                    imageUrl: imageUrl,
-                    authorId: userId,
-                    createdAt: new Date(),
-                    lastModifiedAt: new Date()
+                // Submit post data to your backend, including the imageUrl if uploaded
+                const postResponse = await fetch(`${RENDER_BACKEND_URL}/api/posts`, { // Assuming your post creation endpoint is /api/posts
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // Send JWT for authentication
+                    },
+                    body: JSON.stringify({ title, content, imageUrl })
                 });
+                const postData = await postResponse.json();
 
-                showMessage(postMessage, 'Post published successfully!', 'success');
-                // Clear the form
-                postTitleInput.value = '';
-                postContentTextarea.value = '';
-                postImageInput.value = ''; // Clear file input
+                if (postResponse.ok) {
+                    showMessage(postMessage, 'Post published successfully!', 'success');
+                    // Clear the form
+                    postTitleInput.value = '';
+                    postContentTextarea.value = '';
+                    postImageInput.value = ''; // Clear file input
+                    loadPosts(); // Reload posts to show the new one
+                } else {
+                    throw new Error(postData.message || 'Failed to publish post.');
+                }
             } catch (error) {
                 console.error("Error publishing post:", error);
                 showMessage(postMessage, `Failed to publish post: ${error.message}`, 'error');
@@ -561,63 +567,88 @@ let authReady = false; // Flag to indicate if authentication is ready
             }
         });
 
-        // Load and Display Posts (real-time with onSnapshot)
+        // Load and Display Posts (Now talking to Render Backend)
         function loadPosts() {
-            // Only attempt to load posts if auth is ready and db is initialized
-            if (!authReady || !db) {
-                console.log("Firebase not ready to load posts.");
+            const token = localStorage.getItem('jwt_token');
+            if (!token) {
+                postList.innerHTML = '<li>Please log in to view your posts.</li>';
                 return;
             }
 
-            const postsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts`);
-            const q = query(postsCollectionRef);
-
-            onSnapshot(q, (snapshot) => {
+            fetch(`${RENDER_BACKEND_URL}/api/posts`, { // Assuming an endpoint to get all posts (or user's posts)
+                headers: {
+                    'Authorization': `Bearer ${token}` // Send JWT for authentication
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // If backend sends a 401 for invalid token, log out
+                    if (response.status === 401) {
+                         localStorage.removeItem('jwt_token');
+                         setAuthState(false);
+                         showMessage(loginMessage, 'Session expired. Please log in again.', 'error');
+                    }
+                    throw new Error('Failed to load posts.');
+                }
+                return response.json();
+            })
+            .then(posts => {
                 postList.innerHTML = ''; // Clear current list
-                snapshot.forEach((doc) => {
-                    const post = doc.data();
+                if (posts.length === 0) {
+                    postList.innerHTML = '<li>No posts found. Start writing!</li>';
+                    return;
+                }
+                posts.forEach(post => {
                     const listItem = document.createElement('li');
+                    // Ensure 'createdAt' and 'authorId' exist and are correctly formatted by your backend
+                    const postDate = post.createdAt ? new Date(post.createdAt).toLocaleDateString() : 'N/A';
+                    const postAuthor = post.authorId || 'Unknown';
                     listItem.innerHTML = `
                         ${post.imageUrl ? `<img src="${post.imageUrl}" alt="${post.title}" />` : ''}
                         <div class="post-details">
                             <h4>${post.title}</h4>
                             <p>${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}</p>
-                            <small>By: ${post.authorId} | ${new Date(post.createdAt.toDate()).toLocaleDateString()}</small>
+                            <small>By: ${postAuthor} | ${postDate}</small>
                         </div>
                     `;
                     postList.prepend(listItem); // Add new posts to the top
                 });
-            }, (error) => {
+            })
+            .catch(error => {
                 console.error("Error fetching posts:", error);
                 showMessage(postMessage, `Error loading posts: ${error.message}`, 'error');
+                postList.innerHTML = '<li>Error loading posts.</li>';
             });
         }
 
-        // --- Gemini API Integrations ---
+        // --- Gemini API Integrations (Now talking to Render Backend as a proxy) ---
 
-        async function callGeminiAPI(prompt) {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
-            const payload = {
-                contents: [{ role: "user", parts: [{ text: prompt }] }],
-            };
+        // This function now calls your Render backend, which in turn calls Gemini.
+        // It passes the JWT so your backend can verify the request and use its own securely stored Gemini API key.
+        async function callGeminiAPIProxy(endpoint, data) {
+            const token = localStorage.getItem('jwt_token');
+            if (!token) {
+                throw new Error('Authentication required for AI suggestions.');
+            }
 
-            const response = await fetch(apiUrl, {
+            // The endpoint here is relative to your backend's Gemini proxy endpoint, e.g., /api/gemini/generate-content
+            const response = await fetch(`${RENDER_BACKEND_URL}/api/gemini/${endpoint}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // Send JWT to your backend
+                },
+                body: JSON.stringify(data)
             });
 
             const result = await response.json();
-            if (result.candidates && result.candidates.length > 0 &&
-                result.candidates[0].content && result.candidates[0].content.parts &&
-                result.candidates[0].content.parts.length > 0) {
-                return result.candidates[0].content.parts[0].text;
-            } else {
-                throw new Error("No content generated by Gemini API.");
+            if (!response.ok) {
+                throw new Error(result.message || 'Gemini API call failed via backend.');
             }
+            return result.text; // Assuming your backend returns a JSON object like { text: generatedContent }
         }
 
-        // ✨ Generate Content Function
+        // ✨ Generate Content Function (updated to use proxy)
         generateContentButton.addEventListener('click', async () => {
             const title = postTitleInput.value.trim();
             if (!title) {
@@ -630,7 +661,7 @@ let authReady = false; // Flag to indicate if authentication is ready
 
             try {
                 const prompt = `Write a detailed blog post about "${title}". Focus on providing insightful information and engaging the reader. Aim for at least 300 words.`;
-                const generatedContent = await callGeminiAPI(prompt);
+                const generatedContent = await callGeminiAPIProxy('generate-content', { prompt }); // 'generate-content' is the sub-path
                 postContentTextarea.value = generatedContent;
                 showMessage(geminiSuggestionsMessage, 'Content generated successfully!', 'success');
             } catch (error) {
@@ -641,7 +672,7 @@ let authReady = false; // Flag to indicate if authentication is ready
             }
         });
 
-        // ✨ Summarize Content Function
+        // ✨ Summarize Content Function (updated to use proxy)
         summarizeContentButton.addEventListener('click', async () => {
             const content = postContentTextarea.value.trim();
             if (!content) {
@@ -654,10 +685,8 @@ let authReady = false; // Flag to indicate if authentication is ready
 
             try {
                 const prompt = `Summarize the following blog post content in 2-3 concise paragraphs:\n\n${content}`;
-                const summarizedText = await callGeminiAPI(prompt);
-                // Optionally replace content or display in a modal/separate area
-                // For now, we'll replace the content (user can undo)
-                postContentTextarea.value = summarizedText;
+                const summarizedText = await callGeminiAPIProxy('summarize-content', { prompt }); // 'summarize-content' is the sub-path
+                postContentTextarea.value = summarizedText; // Optionally replace content or display in a modal/separate area
                 showMessage(geminiSuggestionsMessage, 'Content summarized successfully!', 'success');
             } catch (error) {
                 console.error("Error summarizing content:", error);
@@ -667,7 +696,7 @@ let authReady = false; // Flag to indicate if authentication is ready
             }
         });
 
-        // ✨ Suggest Titles Function
+        // ✨ Suggest Titles Function (updated to use proxy)
         suggestTitlesButton.addEventListener('click', async () => {
             const content = postContentTextarea.value.trim();
             if (!content) {
@@ -680,7 +709,7 @@ let authReady = false; // Flag to indicate if authentication is ready
 
             try {
                 const prompt = `Based on the following blog post content, suggest 5 catchy and engaging titles. Provide them as a numbered list:\n\n${content}`;
-                const suggestedTitles = await callGeminiAPI(prompt);
+                const suggestedTitles = await callGeminiAPIProxy('suggest-titles', { prompt }); // 'suggest-titles' is the sub-path
                 showMessage(geminiSuggestionsMessage, `Suggested Titles:\n${suggestedTitles}`, 'info');
             } catch (error) {
                 console.error("Error suggesting titles:", error);
