@@ -181,6 +181,8 @@
             width: 100%;
             border-radius: 8px;
             margin-bottom: 0.8em;
+            aspect-ratio: 16 / 9; /* Ensure consistent image aspect ratio */
+            object-fit: cover; /* Cover the area, cropping if necessary */
         }
 
         .recent-posts-grid article h4 {
@@ -284,42 +286,19 @@
     <main>
         <section class="featured-post">
             <h2>Featured Post</h2>
-            <div class="post-content">
+            <div class="post-content" id="featured-post-container">
                 <div class="text-content">
-                    <h3>How I Designed This Blog (And What You Can Learn)</h3>
-                    <p>A behind-the-scenes look at the decisions that went into this layout, with tips for beginners building their first personal blog.</p>
+                    <h3>Loading Featured Post...</h3>
+                    <p>Please wait while we fetch the latest content.</p>
                 </div>
-                <img src="https://source.unsplash.com/800x400/?design,blog" alt="Featured" />
+                 <img src="https://source.unsplash.com/800x400/?blog,loading" alt="Loading Placeholder" />
             </div>
         </section>
 
         <section class="recent-posts">
             <h2>Recent Posts</h2>
-            <div class="recent-posts-grid">
-
-                <article>
-                    <img src="https://source.unsplash.com/400x200/?tech,writing" alt="Post 1" />
-                    <h4>Top 5 Writing Tools for 2025</h4>
-                    <p>From distraction-free editors to AI helpers, here are tools making writing easier.</p>
-                </article>
-
-                <article>
-                    <img src="https://source.unsplash.com/400x200/?coding,javascript" alt="Post 2" />
-                    <h4>Understanding Asynchronous JavaScript</h4>
-                    <p>A deep dive into Promises, async/await, and how to handle non-blocking operations.</p>
-                </article>
-
-                <article>
-                    <img src="https://source.unsplash.com/400x200/?productivity,mindset" alt="Post 3" />
-                    <h4>Boosting Your Productivity: My Daily Rituals</h4>
-                    <p>Simple habits that have significantly improved my focus and output.</p>
-                </article>
-
-                <article>
-                    <img src="https://source.unsplash.com/400x200/?nature,travel" alt="Post 4" />
-                    <h4>Exploring the Beauty of Nature Through Photography</h4>
-                    <p>Tips for capturing stunning landscapes and wildlife on your next adventure.</p>
-                </article>
+            <div class="recent-posts-grid" id="recent-posts-grid">
+                <p>Loading recent posts...</p>
             </div>
         </section>
     </main>
@@ -340,24 +319,22 @@
         </div>
     </footer>
 
-    <script>
+    <script type="module">
+        // Existing menu toggle script
         const menuBtn = document.getElementById('menu-button');
         const sideMenu = document.getElementById('menu');
         const overlay = document.getElementById('overlay');
 
-        // Open menu
         menuBtn.addEventListener('click', () => {
             sideMenu.classList.add('active');
             overlay.classList.add('active');
         });
 
-        // Close when clicking outside or on a menu link
         overlay.addEventListener('click', () => {
             sideMenu.classList.remove('active');
             overlay.classList.remove('active');
         });
 
-        // Optional: Close menu when a navigation link is clicked
         const navLinks = document.querySelectorAll('.side-menu a');
         navLinks.forEach(link => {
             link.addEventListener('click', () => {
@@ -365,6 +342,90 @@
                 overlay.classList.remove('active');
             });
         });
+
+        // --- NEW JAVASCRIPT FOR FETCHING AND DISPLAYING POSTS ---
+
+        // IMPORTANT: Replace with your actual Render backend URL
+        const RENDER_BACKEND_URL = 'https://blog-backend-b6la.onrender.com'; // <--- Update this to YOUR Render backend URL
+
+        const recentPostsGrid = document.getElementById('recent-posts-grid');
+        const featuredPostContainer = document.getElementById('featured-post-container');
+
+        async function fetchAndDisplayPosts() {
+            try {
+                // Fetch posts from the backend (now publicly accessible GET endpoint)
+                const response = await fetch(`${RENDER_BACKEND_URL}/api/posts`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const posts = await response.json();
+                console.log("Fetched posts:", posts); // Log posts to check if data is received
+
+                // Clear existing static content/placeholders
+                recentPostsGrid.innerHTML = '';
+                featuredPostContainer.innerHTML = '';
+
+
+                if (posts.length === 0) {
+                    recentPostsGrid.innerHTML = '<p>No recent posts to display. Start publishing!</p>';
+                    featuredPostContainer.innerHTML = `
+                        <div class="text-content">
+                            <h3>No Featured Post Yet</h3>
+                            <p>Create your first post from the publisher dashboard to see it here!</p>
+                        </div>
+                        <img src="https://source.unsplash.com/800x400/?blog,placeholder" alt="Placeholder" />
+                    `;
+                    return;
+                }
+
+                // Display Featured Post (most recent post)
+                const featuredPost = posts[0];
+                featuredPostContainer.innerHTML = `
+                    <div class="text-content">
+                        <h3>${featuredPost.title}</h3>
+                        <p>${featuredPost.content}</p>
+                        <p style="font-size: 0.8em; color: #777;">By ${featuredPost.authorEmail} on ${new Date(featuredPost.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <img src="${featuredPost.imageUrl || 'https://source.unsplash.com/800x400/?blog'}" alt="${featuredPost.title}" />
+                `;
+
+                // Display Recent Posts (excluding the featured one)
+                const recentPosts = posts.slice(1); // All posts except the first (featured)
+
+                if (recentPosts.length === 0) {
+                    recentPostsGrid.innerHTML = '<p>No other recent posts to display.</p>';
+                } else {
+                    recentPosts.forEach(post => {
+                        const article = document.createElement('article');
+                        article.innerHTML = `
+                            <img src="${post.imageUrl || 'https://source.unsplash.com/400x200/?blog'}" alt="${post.title}" />
+                            <h4>${post.title}</h4>
+                            <p>${post.content.substring(0, 100)}...</p>
+                            <p style="font-size: 0.8em; color: #777;">By ${post.authorEmail} on ${new Date(post.createdAt).toLocaleDateString()}</p>
+                        `;
+                        recentPostsGrid.appendChild(article);
+                    });
+                }
+
+
+            } catch (error) {
+                console.error("Error fetching posts:", error);
+                recentPostsGrid.innerHTML = '<p style="color: var(--accent);">Failed to load posts. Please try again later.</p>';
+                featuredPostContainer.innerHTML = `
+                        <div class="text-content">
+                            <h3>Error Loading Posts</h3>
+                            <p style="color: var(--accent);">Something went wrong while fetching blog posts.</p>
+                        </div>
+                        <img src="https://source.unsplash.com/800x400/?error,blog" alt="Error" />
+                    `;
+            }
+        }
+
+        // Call the function when the page loads
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayPosts);
+
     </script>
 </body>
 </html>
