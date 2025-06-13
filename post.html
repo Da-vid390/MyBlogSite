@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title id="post-title-tag">Blog Post</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --bg: #fef9ef;
+            --accent: #e63946;
+            --navy: #1d3557;
+            --text: #333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background: var(--navy);
+            color: white;
+            padding: 1em 1.5em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+        header h1 {
+            cursor: pointer; /* Make blog title clickable to go home */
+        }
+
+        .back-button {
+            background: var(--accent);
+            border: none;
+            padding: 0.5em 1em;
+            color: white;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .back-button:hover {
+            background-color: #c72c38;
+            transform: scale(1.05);
+        }
+
+        main {
+            padding: 2em 1.5em;
+            max-width: 800px; /* Adjust max-width for single post content */
+            margin: auto;
+            flex-grow: 1;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            margin-top: 2em;
+            margin-bottom: 2em;
+        }
+
+        .post-detail h2 {
+            font-size: 2.5rem;
+            color: var(--navy);
+            margin-bottom: 0.5em;
+        }
+
+        .post-meta {
+            font-size: 0.9em;
+            color: #777;
+            margin-bottom: 1.5em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 1em;
+        }
+
+        .post-image {
+            width: 100%;
+            height: 400px; /* Fixed height for consistency */
+            object-fit: cover; /* Cover the area, cropping if necessary */
+            border-radius: 8px;
+            margin-bottom: 2em;
+        }
+
+        .post-content-full p {
+            margin-bottom: 1em; /* Spacing between paragraphs */
+            line-height: 1.6;
+            color: var(--text);
+        }
+        .post-content-full br {
+            display: none; /* Hide br if paragraphs are used, or adjust as needed */
+        }
+        .post-content-full p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Loading state */
+        .loading-state, .error-state {
+            text-align: center;
+            padding: 3em;
+            font-size: 1.2em;
+            color: #555;
+        }
+        .error-state {
+            color: var(--accent);
+        }
+
+        /* Footer Styles - (copy from your index.html) */
+        footer {
+            background: var(--navy);
+            color: white;
+            padding: 2em 1.5em;
+            text-align: center;
+            margin-top: 3em;
+        }
+
+        footer .footer-content {
+            max-width: 1200px;
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1em;
+        }
+
+        footer .footer-links a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+            transition: color 0.3s ease;
+        }
+
+        footer .footer-links a:hover {
+            color: var(--accent);
+        }
+
+        footer .social-icons a {
+            color: white;
+            font-size: 1.5em;
+            margin: 0 8px;
+            transition: color 0.3s ease, transform 0.2s ease;
+        }
+
+        footer .social-icons a:hover {
+            color: var(--accent);
+            transform: translateY(-3px);
+        }
+
+        @media (min-width: 768px) {
+            footer .footer-content {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 onclick="window.location.href='index.html'">My Blog</h1> <button class="back-button" onclick="window.history.back()">← Back to Posts</button>
+    </header>
+
+    <main id="post-detail-main">
+        <div class="loading-state">Loading post...</div>
+        </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 My Blog. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+            </div>
+            <div class="social-icons">
+                <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module">
+        // IMPORTANT: Replace with your actual Render backend URL
+        const RENDER_BACKEND_URL = 'https://blog-backend-b6la.onrender.com'; // <--- Update this to YOUR Render backend URL
+
+        const postDetailMain = document.getElementById('post-detail-main');
+        const pageTitleTag = document.getElementById('post-title-tag');
+
+        // Function to format plain text content into HTML paragraphs
+        function formatContentToHtml(plainText) {
+            if (!plainText) return '';
+            // Split by double newlines for paragraphs, and then handle single newlines as <br>
+            const paragraphs = plainText.split(/\n\s*\n/).map(p => {
+                return p.replace(/\n/g, '<br>');
+            });
+            // Wrap each formatted paragraph in <p> tags
+            return paragraphs.map(p => `<p>${p}</p>`).join('');
+        }
+
+        async function fetchAndDisplaySinglePost() {
+            // Get the post ID from the URL query parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const postId = urlParams.get('id');
+
+            if (!postId) {
+                postDetailMain.innerHTML = `
+                    <div class="error-state">Error: No post ID provided in the URL.</div>
+                `;
+                pageTitleTag.textContent = "Error - Missing ID";
+                return;
+            }
+
+            try {
+                const response = await fetch(`${RENDER_BACKEND_URL}/api/posts/${postId}`);
+
+                if (response.status === 404) {
+                    postDetailMain.innerHTML = `
+                        <div class="error-state">Post not found.</div>
+                    `;
+                    pageTitleTag.textContent = "Post Not Found";
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const post = await response.json();
+                console.log("Fetched single post:", post);
+
+                pageTitleTag.textContent = post.title || "Blog Post"; // Update browser tab title
+
+                postDetailMain.innerHTML = `
+                    <div class="post-detail">
+                        <h2 id="post-title">${post.title}</h2>
+                        <div class="post-meta">
+                            By ${post.author_email} on ${new Date(post.created_at).toLocaleDateString()}
+                        </div>
+                        <img src="${post.image_url || 'https://source.unsplash.com/800x400/?blog'}" alt="${post.title}" class="post-image" />
+                        <div class="post-content-full">
+                            ${formatContentToHtml(post.content)}
+                        </div>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error("Error fetching single post:", error);
+                postDetailMain.innerHTML = `
+                    <div class="error-state">Failed to load post. Please try again later.</div>
+                `;
+                pageTitleTag.textContent = "Error Loading Post";
+            }
+        }
+
+        // Call the function when the page loads
+        document.addEventListener('DOMContentLoaded', fetchAndDisplaySinglePost);
+    </script>
+</body>
+</html>
