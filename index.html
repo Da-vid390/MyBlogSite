@@ -92,6 +92,7 @@
 
         h1 {
             font-size: 2rem;
+            cursor: pointer; /* Make blog title clickable to go home */
         }
 
         /* Styles for main content */
@@ -215,6 +216,33 @@
             transform: translateX(5px); /* Subtle slide on hover */
         }
 
+        /* Styles for Post Links */
+        .post-link {
+            text-decoration: none;
+            color: var(--navy);
+            transition: color 0.3s ease;
+        }
+        .post-link:hover {
+            color: var(--accent);
+        }
+
+        /* Styles for Read More Button/Link */
+        .read-more-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 15px;
+            background-color: var(--accent);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            font-size: 0.9em;
+        }
+        .read-more-btn:hover {
+            background-color: #c72c38;
+            transform: translateY(-2px);
+        }
+
         /* Footer Styles */
         footer {
             background: var(--navy);
@@ -267,15 +295,15 @@
 </head>
 <body>
     <header>
-        <h1>My Blog</h1>
+        <h1 onclick="window.location.href='index.html'">My Blog</h1>
         <div class="menu-btn" id="menu-button">☰</div>
     </header>
 
     <div class="side-menu" id="menu">
         <p><strong>Navigation</strong></p>
         <ul>
-            <li><a href="#">Home</a></li>
-            <li><a href="#">Recent Posts</a></li>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="#recent-posts-section">Recent Posts</a></li>
             <li><a href="#">Popular</a></li>
             <li><a href="#">Contact</a></li>
         </ul>
@@ -295,7 +323,7 @@
             </div>
         </section>
 
-        <section class="recent-posts">
+        <section class="recent-posts" id="recent-posts-section">
             <h2>Recent Posts</h2>
             <div class="recent-posts-grid" id="recent-posts-grid">
                 <p>Loading recent posts...</p>
@@ -351,6 +379,17 @@
         const recentPostsGrid = document.getElementById('recent-posts-grid');
         const featuredPostContainer = document.getElementById('featured-post-container');
 
+        // Function to format plain text content into HTML paragraphs (re-added for clarity)
+        function formatContentToHtml(plainText) {
+            if (!plainText) return '';
+            // Split by double newlines for paragraphs, and then handle single newlines as <br>
+            const paragraphs = plainText.split(/\n\s*\n/).map(p => {
+                return p.replace(/\n/g, '<br>');
+            });
+            // Wrap each formatted paragraph in <p> tags
+            return paragraphs.map(p => `<p>${p}</p>`).join('');
+        }
+
         async function fetchAndDisplayPosts() {
             try {
                 // Fetch posts from the backend (now publicly accessible GET endpoint)
@@ -384,11 +423,12 @@
                 const featuredPost = posts[0];
                 featuredPostContainer.innerHTML = `
                     <div class="text-content">
-                        <h3>${featuredPost.title}</h3>
-                        <p>${featuredPost.content}</p>
-                        <p style="font-size: 0.8em; color: #777;">By ${featuredPost.authorEmail} on ${new Date(featuredPost.createdAt).toLocaleDateString()}</p>
+                        <h3><a href="post.html?id=${featuredPost.id}" class="post-link">${featuredPost.title}</a></h3>
+                        ${formatContentToHtml(featuredPost.content.substring(0, 300) + (featuredPost.content.length > 300 ? '...' : ''))}
+                        <p style="font-size: 0.8em; color: #777;">By ${featuredPost.author_email} on ${new Date(featuredPost.created_at).toLocaleDateString()}</p>
+                        ${featuredPost.content.length > 300 ? `<p><a href="post.html?id=${featuredPost.id}" class="read-more-btn">Read More</a></p>` : ''}
                     </div>
-                    <img src="${featuredPost.imageUrl || 'https://source.unsplash.com/800x400/?blog'}" alt="${featuredPost.title}" />
+                    <img src="${featuredPost.image_url || 'https://source.unsplash.com/800x400/?blog'}" alt="${featuredPost.title}" />
                 `;
 
                 // Display Recent Posts (excluding the featured one)
@@ -400,10 +440,11 @@
                     recentPosts.forEach(post => {
                         const article = document.createElement('article');
                         article.innerHTML = `
-                            <img src="${post.imageUrl || 'https://source.unsplash.com/400x200/?blog'}" alt="${post.title}" />
-                            <h4>${post.title}</h4>
-                            <p>${post.content.substring(0, 100)}...</p>
-                            <p style="font-size: 0.8em; color: #777;">By ${post.authorEmail} on ${new Date(post.createdAt).toLocaleDateString()}</p>
+                            <img src="${post.image_url || 'https://source.unsplash.com/400x200/?blog'}" alt="${post.title}" />
+                            <h4><a href="post.html?id=${post.id}" class="post-link">${post.title}</a></h4>
+                            ${formatContentToHtml(post.content.substring(0, 150) + (post.content.length > 150 ? '...' : ''))}
+                            <p style="font-size: 0.8em; color: #777;">By ${post.author_email} on ${new Date(post.created_at).toLocaleDateString()}</p>
+                            ${post.content.length > 150 ? `<p><a href="post.html?id=${post.id}" class="read-more-btn">Read More</a></p>` : ''}
                         `;
                         recentPostsGrid.appendChild(article);
                     });
